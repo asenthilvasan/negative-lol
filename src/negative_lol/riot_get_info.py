@@ -1,13 +1,15 @@
 import os
 import requests
+from dotenv import load_dotenv
 
+load_dotenv()
 api_key_priv = os.getenv('RIOT_API_KEY')
 
 def get_puuid(game_name: str, tagline: str, region: str, api_key: str) -> str:
     api_url = f"https://{region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{game_name}/{tagline}?api_key={api_key}"
     resp = requests.get(api_url)
-    '''if resp.status_code != 200:
-        raise Exception(f"Error fetching PUUID: {resp.status_code} {resp.text}")'''
+    if resp.status_code != 200:
+        raise Exception(f"Error fetching PUUID: {resp.status_code} {resp.text}")
 
     player_info = resp.json()
     puuid = player_info['puuid']

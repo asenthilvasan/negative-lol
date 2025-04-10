@@ -1,3 +1,4 @@
 .env
 tests
 .idea/
+.venv
