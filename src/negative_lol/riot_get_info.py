@@ -45,6 +45,8 @@ def get_kda(participant_data: dict) -> float:
     kills =  participant_data['kills']
     assists = participant_data['assists']
     deaths = participant_data['deaths']
+    if deaths == 0:
+        deaths = 1
     return (kills + assists) / deaths
 
 def get_kda_from_names(game_name: str, tagline: str, region: str, api_key: str) -> float:
@@ -56,10 +58,10 @@ def get_kda_from_names(game_name: str, tagline: str, region: str, api_key: str) 
     return get_kda(participant_data)
 
 #small test
-'''
+
 game_name = input("Enter game name: ")
 tagline = input("Enter tagline: ")
 region = input("Enter region: ")
 kda = get_kda_from_names(game_name, tagline, region, api_key_priv)
 print(f"Your latest KDA is: {kda}")
-'''
+

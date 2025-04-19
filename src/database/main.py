@@ -82,3 +82,10 @@ async def create_kda_log(log: KDALogCreate, db: db_dependency):
     db.add(db_kda_log)
     db.commit()
     db.refresh(db_kda_log)
+
+@app.get("/kda_logs/read/{riot_profile_id}")
+async def read_kda_logs(riot_profile_id: int, db: db_dependency):
+    result = db.query(models.KDALog).filter(models.KDALog.riot_profile_id == riot_profile_id).all()
+    if not result:
+        raise HTTPException(status_code=404, detail="KDALog not found")
+    return result

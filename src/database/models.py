@@ -22,6 +22,7 @@ class User(Base):
     email = Column(String)
     phone_number = Column(String)
     signup_date = Column(DateTime, default=datetime.now(timezone.utc))
+    riot_profiles = relationship("RiotProfile", back_populates="users")
 
 '''
 riot_profiles
@@ -44,6 +45,7 @@ class RiotProfile(Base):
     last_checked = Column(DateTime, default=datetime.now(timezone.utc))
 
     kda_logs = relationship("KDALog", back_populates="riot_profiles")
+    users = relationship("User", back_populates="riot_profiles")
 '''
 id (PK)
 riot_profile_id (FK)
