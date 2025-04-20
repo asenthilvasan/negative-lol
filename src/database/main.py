@@ -13,6 +13,7 @@ models.Base.metadata.create_all(bind=engine)
 class UserCreate(BaseModel):
     email: Optional[EmailStr]
     phone_number: Optional[str]
+    auth_id: Optional[str]
 
 class UserRead(BaseModel):
     id: int
@@ -26,6 +27,7 @@ class RiotProfileCreate(BaseModel):
     game_name: str
     tagline: str
     region: str
+    auth_id: Optional[str]
 
 class RiotProfileRead(BaseModel):
     id: int
@@ -40,6 +42,7 @@ class KDALogCreate(BaseModel):
     match_id: str
     kda_ratio: float
     timestamp: datetime
+    riot_profile_id: str
 
 class KDALogRead(BaseModel):
     id: int
@@ -71,19 +74,29 @@ async def create_user(user: UserCreate, db: db_dependency):
 
 @app.post("/riot_profile/create")
 async def create_riot_profile(profile: RiotProfileCreate, db: db_dependency):
-    db_riot_profile = models.RiotProfile(game_name=profile.game_name,tagline=profile.tagline,region=profile.region)
+    user = db.query(models.User).filter(models.User.auth_id == profile.auth_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    db_riot_profile = models.RiotProfile(
+        game_name=profile.game_name,
+        tagline=profile.tagline,
+        region=profile.region,
+        user_id=user.id)
     db.add(db_riot_profile)
     db.commit()
     db.refresh(db_riot_profile)
 
 @app.post("/kda_logs/create")
 async def create_kda_log(log: KDALogCreate, db: db_dependency):
-    db_kda_log = models.KDALog(match_id=log.match_id,kda_ratio=log.kda_ratio,timestamp=log.timestamp)
+    riot_profile = db.query(models.RiotProfile).filter(models.RiotProfile.id == log.riot_profile_id).first()
+    if not riot_profile:
+        raise HTTPException(status_code=404, detail="Riot profile not found")
+    db_kda_log = models.KDALog(match_id=log.match_id,kda_ratio=log.kda_ratio,timestamp=log.timestamp, riot_profile_id=riot_profile.id)
     db.add(db_kda_log)
     db.commit()
     db.refresh(db_kda_log)
 
-@app.get("/kda_logs/read/{riot_profile_id}")
+@app.get("/kda_logs/read")
 async def read_kda_logs(riot_profile_id: int, db: db_dependency):
     result = db.query(models.KDALog).filter(models.KDALog.riot_profile_id == riot_profile_id).all()
     if not result:
