@@ -64,7 +64,9 @@ class KDALog(Base):
     match_id = Column(String)
     kda_ratio = Column(Float)
     timestamp = Column(DateTime)
+    '''
     __table_args__ = (
         UniqueConstraint('match_id', 'riot_profile_id', name='uq_match_profile'),
     )
+    '''
     riot_profiles = relationship("RiotProfile", back_populates="kda_logs")

@@ -3,3 +3,6 @@ tests
 .idea/
 .venv
 .python-version
+__pycache__/
+*.pyc
+*.pyo
