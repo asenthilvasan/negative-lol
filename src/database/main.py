@@ -1,14 +1,20 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel, EmailStr, ConfigDict
-from datetime import datetime, timedelta,date,time
+from datetime import datetime, timezone
 from typing import List, Annotated, Optional
 from src.database import models
 from src.database.database import engine, SessionLocal
 from sqlalchemy.orm import Session
-import uuid
+import uuid, os
+from src.negative_lol.riot_get_info import get_all_from_names
+from dotenv import load_dotenv
 
 app=FastAPI()
 models.Base.metadata.create_all(bind=engine)
+
+load_dotenv()
+api_key = os.getenv('RIOT_API_KEY')
+
 
 class UserCreate(BaseModel):
     email: Optional[EmailStr]
@@ -34,6 +40,7 @@ class RiotProfileRead(BaseModel):
     game_name: str
     tagline: str
     region: str
+    active: bool
     last_checked: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
@@ -44,6 +51,9 @@ class KDALogCreate(BaseModel):
     timestamp: datetime
     riot_profile_id: str
 
+class KDALogUpdate(BaseModel):
+    riot_profile_id: str
+
 class KDALogRead(BaseModel):
     id: int
     match_id: str
@@ -51,9 +61,6 @@ class KDALogRead(BaseModel):
     timestamp: datetime
 
     model_config = ConfigDict(from_attributes=True)
-
-class RiotProfileWithLogs(RiotProfileRead):
-    kda_logs: List[KDALogRead] = []
 
 
 def get_db():
@@ -95,6 +102,36 @@ async def create_kda_log(log: KDALogCreate, db: db_dependency):
     db.add(db_kda_log)
     db.commit()
     db.refresh(db_kda_log)
+
+'''
+active_profiles = db.query(RiotProfile).filter(RiotProfile.active == True).all()
+
+for profile in active_profiles:
+    update_kda_log(profile.kda_log.id)
+'''
+@app.put("/kda_logs/update")
+async def update_kda_log(log_update: KDALogUpdate, db: db_dependency):
+    # we are given riot_profile_id
+    riot_profile = db.query(models.RiotProfile).filter(models.RiotProfile.id == log_update.riot_profile_id).first()
+    if not riot_profile:
+        raise HTTPException(status_code=404, detail="Riot profile not found")
+
+    log = db.query(models.KDALog).filter(models.KDALog.riot_profile_id == log_update.riot_profile_id).first()
+
+    if not log:
+        raise HTTPException(status_code=404, detail="Cannot find log - cannot update nonexistent log")
+
+    info = get_all_from_names(riot_profile.game_name, riot_profile.tagline, riot_profile.region, api_key)
+
+    log.match_id = info["match_id"]
+    log.kda_ratio = info["kda"]
+    log.timestamp = info["timestamp"]
+
+    riot_profile.last_checked = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(log)
+    return log
 
 @app.get("/kda_logs/read")
 async def read_kda_logs(riot_profile_id: int, db: db_dependency):

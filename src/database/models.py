@@ -1,6 +1,6 @@
 from sqlalchemy import (Column, Integer, String,
                         ForeignKey, DateTime, Float,
-                        UniqueConstraint)
+                        UniqueConstraint, Boolean)
 from sqlalchemy.orm import relationship
 from src.database.database import Base
 from datetime import datetime, timezone
@@ -43,7 +43,7 @@ class RiotProfile(Base):
     tagline = Column(String)
     region = Column(String)
     last_checked = Column(DateTime, default=datetime.now(timezone.utc))
-
+    active = Column(Boolean, default=True)
     kda_logs = relationship("KDALog", back_populates="riot_profiles")
     users = relationship("User", back_populates="riot_profiles")
 '''

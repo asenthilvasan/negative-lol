@@ -1,6 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 api_key_priv = os.getenv('RIOT_API_KEY')
@@ -15,8 +16,7 @@ def get_puuid(game_name: str, tagline: str, region: str, api_key: str) -> str:
     puuid = player_info['puuid']
     return puuid
 
-#count must be between 0-100
-#should be changed to only return most recent game(s?)
+# here in case changing how often we check
 def get_x_match_ids(puuid: str, region: str, api_key: str, count: int) -> list[str]:
     if (count <= 0 or count > 100):
         raise Exception("Invalid count value, must be between 0 and 100")
@@ -26,6 +26,14 @@ def get_x_match_ids(puuid: str, region: str, api_key: str, count: int) -> list[s
         raise Exception(f"Error fetching match IDs: {resp.status_code} {resp.text}")
     match_ids = resp.json()
     return match_ids
+
+def get_last_match_id(puuid: str, region: str, api_key: str) -> str:
+    api_url = f"https://{region}.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=1&api_key={api_key}"
+    resp = requests.get(api_url)
+    if resp.status_code != 200:
+        raise Exception(f"Error fetching match IDs: {resp.status_code} {resp.text}")
+    match_id = resp.json()
+    return match_id[0]
 
 def get_match_data(match_id: str, region: str, api_key: str) -> dict:
     api_url = f"https://{region}.api.riotgames.com/lol/match/v5/matches/{match_id}?api_key={api_key}"
@@ -40,6 +48,12 @@ def get_participant_number(match_data: dict, puuid: str) -> int:
 
 def get_participant_data(match_data: dict, participant_number: int) -> dict:
     return match_data['info']['participants'][participant_number]
+
+def get_timestamp(match_data: dict) -> datetime.datetime:
+    start = match_data['info']['gameStartTimestamp']
+    duration = match_data['info']['participants'][0]['timePlayed']
+    timestamp = (start + duration) / 1000
+    return datetime.datetime.fromtimestamp(timestamp)
 
 def get_kda(participant_data: dict) -> float:
     kills =  participant_data['kills']
@@ -57,11 +71,22 @@ def get_kda_from_names(game_name: str, tagline: str, region: str, api_key: str) 
     participant_data = get_participant_data(match_data, participant_number)
     return get_kda(participant_data)
 
-#small test
 
+def get_all_from_names(game_name: str, tagline: str, region: str, api_key: str) -> dict:
+    puuid = get_puuid(game_name, tagline, region, api_key)
+    match_id = get_last_match_id(puuid, region, api_key)
+    match_data = get_match_data(match_id, region, api_key)
+    participant_number = get_participant_number(match_data, puuid)
+    participant_data = get_participant_data(match_data, participant_number)
+    kda = get_kda(participant_data)
+    timestamp = get_timestamp(match_data)
+    return {"match_id": match_id, "timestamp": timestamp, "kda": kda}
+
+#small test
+'''
 game_name = input("Enter game name: ")
 tagline = input("Enter tagline: ")
 region = input("Enter region: ")
 kda = get_kda_from_names(game_name, tagline, region, api_key_priv)
 print(f"Your latest KDA is: {kda}")
-
+'''
