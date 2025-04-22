@@ -46,9 +46,6 @@ class RiotProfileRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class KDALogCreate(BaseModel):
-    match_id: str
-    kda_ratio: float
-    timestamp: datetime
     riot_profile_id: str
 
 class KDALogUpdate(BaseModel):
@@ -98,7 +95,19 @@ async def create_kda_log(log: KDALogCreate, db: db_dependency):
     riot_profile = db.query(models.RiotProfile).filter(models.RiotProfile.id == log.riot_profile_id).first()
     if not riot_profile:
         raise HTTPException(status_code=404, detail="Riot profile not found")
-    db_kda_log = models.KDALog(match_id=log.match_id,kda_ratio=log.kda_ratio,timestamp=log.timestamp, riot_profile_id=riot_profile.id)
+
+    info = get_all_from_names(riot_profile.game_name,
+                              riot_profile.tagline,
+                              riot_profile.region,
+                              api_key)
+
+    db_kda_log = models.KDALog(match_id=info["match_id"],
+                               kda_ratio=info["kda"],
+                               timestamp=info["timestamp"],
+                               riot_profile_id=riot_profile.id)
+
+    riot_profile.last_checked = datetime.now(timezone.utc)
+
     db.add(db_kda_log)
     db.commit()
     db.refresh(db_kda_log)
