@@ -165,7 +165,7 @@ async def update_kda_log(log_update: KDALogUpdate, db: db_dependency):
     db.refresh(log)
     return {"id": log.id, "message": "KDA Log updated"}
 
-@app.get("/kda_logs/read")
+@app.get("/kda_logs/read/{riot_profile_id}")
 async def read_kda_logs(riot_profile_id: int, db: db_dependency):
     result = db.query(models.KDALog).filter(models.KDALog.riot_profile_id == riot_profile_id).first()
     if not result:
