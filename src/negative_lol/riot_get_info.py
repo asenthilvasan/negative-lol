@@ -90,3 +90,4 @@ region = input("Enter region: ")
 kda = get_kda_from_names(game_name, tagline, region, api_key_priv)
 print(f"Your latest KDA is: {kda}")
 '''
+
