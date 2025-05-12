@@ -87,7 +87,10 @@ def get_all_from_names(game_name: str, tagline: str, region: str, api_key: str) 
 game_name = input("Enter game name: ")
 tagline = input("Enter tagline: ")
 region = input("Enter region: ")
+#puuid = get_puuid(game_name, tagline, region, api_key_priv)
+#mid = get_last_match_id(puuid, region, api_key_priv)
 kda = get_kda_from_names(game_name, tagline, region, api_key_priv)
 print(f"Your latest KDA is: {kda}")
+#print(f"Your latest MatchID is: {mid}")
 '''
 

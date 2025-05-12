@@ -49,3 +49,28 @@ def update_kda_log_for_profile(riot_profile: models.RiotProfile, db):
     db.refresh(log)
     return log
 
+league_of_graphs_region_map = {
+    "NA1": "NA",     # North America
+    "BR1": "BR",     # Brazil
+    "LA1": "LAN",    # Latin America North
+    "LA2": "LAS",    # Latin America South
+    "EUW1": "EUW",   # Europe West
+    "EUN1": "EUNE",  # Europe Nordic & East
+    "RU": "RU",      # Russia
+    "TR1": "TR",     # Turkey
+    "JP1": "JP",     # Japan
+    "KR": "KR",      # Korea
+    "TW2": "TW",     # Taiwan
+    "VN2": "VN",     # Vietnam
+    "ME1": "ME"      # Middle East
+}
+
+def build_league_of_graphs_url(match_id: str):
+    try:
+        platform_code, match_number = match_id.upper().split("_")
+        region_code = league_of_graphs_region_map[platform_code]
+        return f"https://www.leagueofgraphs.com/match/{region_code}/{match_number}"
+    except (KeyError, ValueError):
+        return None
+
+
